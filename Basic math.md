@@ -7,22 +7,11 @@
 ### What is it?
 A **Bayesian regression model** estimates relationships between inputs (like media spend, promotions, seasonality) and an outcome (like sales), while quantifying uncertainty. Instead of giving one "best" value for each parameter, it gives a **distribution** of likely values based on both prior knowledge and observed data.
 
-### Bayes’ Theorem:
-# Save the Bayes’ Theorem explanation content as a Markdown file
-
-bayes_formula_md = """
-# 📘 Bayes’ Theorem: The Core of Bayesian Inference
-
-Bayes' Rule helps us update our beliefs after observing data.
-
-## 🧮 The Formula
-
 \\[
 P(\\theta \\mid D) = \\frac{P(D \\mid \\theta) \\cdot P(\\theta)}{P(D)}
 \\]
 
 Where:
-
 - \\( \\theta \\): model parameters (e.g., regression coefficients like \\(\\beta_1, \\beta_2\\))
 - \\( D \\): observed data (e.g., sales, media spend)
 - \\( P(\\theta) \\): **Prior** — your belief about the parameters before seeing the data
@@ -43,23 +32,6 @@ Where:
 
 ---
 
-✅ In practice, we usually use the simplified version:
-
-\\[
-P(\\theta \\mid D) \\propto P(D \\mid \\theta) \\cdot P(\\theta)
-\\]
-
-Because MCMC methods sample from the **shape** of the posterior, and do not need the denominator.
-"""
-
-# Save the file
-formula_path = "/mnt/data/Bayes_Theorem_Explained.md"
-with open(formula_path, "w") as f:
-    f.write(bayes_formula_md)
-
-formula_path
-
-
 ```
 P(θ | D) = [P(D | θ) * P(θ)] / P(D)
 ```
@@ -72,19 +44,12 @@ P(θ | D) = [P(D | θ) * P(θ)] / P(D)
 > `Posterior ∝ Likelihood × Prior`  
 > because the denominator is usually intractable.
 
-### Intuition example (cold, cough, flu):
-Let’s say you observe someone coughing. You want to infer whether they have a cold, the flu, or COVID.
-Prior:
- P(Cold)=0.1 → You believe there's a 10% chance someone has a cold.
-Likelihood:
- P(Cough｜Cold)=0.8 → 80% of people with a cold tend to cough.
-Marginal probability of cough (normalizing constant/evidence/marginal likelihood):
- P(Cough)=0.2 → In the general population, 20% of people have a cough.
-🧠 Question: What is the probability that someone has a cold given that they are coughing?
-
+### Intuition example:
+Let’s say you observe someone coughing. You want to infer whether they have a cold.
 - **Prior**: P(Cold)=0.1 → You believe there's a 10% chance someone has a cold.
 - **Likelihood**: P(Cough｜Cold)=0.8 → 80% of people with a cold tend to cough.
 - **Marginal probability of cough (normalizing constant/evidence/marginal likelihood)**:P(Cough)=0.2 → In the general population, 20% of people have a cough.
+- 🧠 Question: What is the probability that someone has a cold given that they are coughing?
 - **Posterior**: Combine the above to infer the most likely condition
 
 ### Common Distributions and Use Cases
