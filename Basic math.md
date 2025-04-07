@@ -119,8 +119,8 @@ Simulate physics — let θ be position and add artificial momentum p to guide t
 
 ### Leapfrog algorithm:
 - Simulate a trajectory using gradients of the posterior
-- Typically run 10–100 small steps
-- Accept or reject the final position based on energy conservation
+- Typically run 10–100 small steps (step size, L(length?) are hyperparameters, need to find the optimal, NUTS（No-U-Turn Sampler） to find the optimal value)
+- Accept or reject the final position based on energy conservation (how to decide if accept the new position: the change in energy before and after should be close to 0. If not: reject, go back to the last position)
 
 ✅ Only the **last position** in the trajectory becomes the sample (others are internal to leapfrog).
 
