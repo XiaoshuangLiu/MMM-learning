@@ -31,7 +31,91 @@ where:
 
 **Prophet decomposition** refers to taking a fitted Prophet model and splitting (or “decomposing”) the observed time series values into each of these components. It answers the question: *How much of a given data point at time \( t \) is explained by the long-term trend? By seasonality? By special events? By random noise?*
 
-#### Math Behind Prophet’s Components
+### Math Behind Prophet’s Components
+
+#### 1. Trend (\( g(t) \))
+
+Prophet generally models the long-term trend using either a **piecewise linear** function or a **logistic** growth function (if there is a known carrying capacity). By default, Prophet uses the piecewise linear model.
+
+##### 1.1 Piecewise Linear Trend
+
+- **Core Idea**: We allow the slope of the trend to change at a set of predefined “change points.”
+- **Mathematical Form** (simplified):
+  \[
+  g(t) = k + a(t) + \sum_{i=1}^{m} \kappa_i \cdot D_i(t),
+  \]
+  where:
+  - \( k \) is the intercept at \( t=0 \).
+  - \( a(t) \) is the overall linear slope up to time \( t \).
+  - \( \kappa_i \) are the adjustments to the slope at each change point \( i \).
+  - \( D_i(t) \) is an indicator function that is 1 when \( t \) is after the \( i \)-th change point and 0 otherwise.
+
+The function \( g(t) \) therefore *segments* time into regions where the trend slope can differ, reflecting potential structural changes in the data over time.
+
+##### 1.2 Logistic Growth (Alternative)
+
+- **Core Idea**: If there is a **carrying capacity** \( C \) (for example, a saturation point in demand), Prophet can model:
+  \[
+  g(t) = C \Big/ \Bigl( 1 + \exp\bigl(-(\alpha + \beta t)\bigr) \Bigr),
+  \]
+  and may still include piecewise adjustments for changing growth rates.  
+- This is helpful when there’s a known upper bound beyond which the metric cannot grow.
+
+---
+
+#### 2. Seasonality (\( s(t) \))
+
+Prophet captures seasonality using **Fourier series**. If \( P \) is the period (e.g., \( P=7 \) for weekly seasonality if the data is daily, \( P=365.25 \) for yearly seasonality), then the seasonality function is approximated by a sum of sine and cosine terms.
+
+\[
+s(t) = \sum_{n=1}^{N} \Bigl( a_n \sin\bigl(\tfrac{2\pi n t}{P}\bigr) + b_n \cos\bigl(\tfrac{2\pi n t}{P}\bigr) \Bigr),
+\]
+
+where:
+- \( N \) is the number of Fourier terms (the more terms, the more flexible the seasonality curve).
+- \( a_n, b_n \) are learned coefficients during model fitting.
+
+Prophet can handle multiple seasonalities by summing separate Fourier expansions, one for each seasonal cycle (e.g. daily, weekly, yearly).
+
+---
+
+#### 3. Holidays / Special Events (\( h(t) \))
+
+To model the effect of holidays or special events, Prophet adds **additional regressors** that turn “on” around certain dates. Conceptually:
+
+\[
+h(t) = \sum_{k=1}^{K} \alpha_k \cdot X_k(t),
+\]
+
+where:
+- \( X_k(t) \) is a binary indicator (or set of indicators) for holiday/event \( k \) at time \( t \).
+- \( \alpha_k \) is the estimated impact of holiday \( k \).
+
+This term allows the model to capture one-off spikes or drops in the data (e.g. Black Friday, Chinese New Year, promotions, etc.), which would not be fully explained by the standard seasonality or trend terms.
+
+---
+
+#### 4. Noise / Residual (\( \varepsilon(t) \))
+
+The noise term \(\varepsilon(t)\) captures random fluctuations or **unexplained** variance in the data after accounting for the trend, seasonality, and holiday effects. In Prophet’s additive model, \(\varepsilon(t)\) is assumed to be independent noise. Typically, Prophet uses MAP (maximum a posteriori) or MCMC to estimate parameters, implicitly assuming these residuals are normally distributed or close to random white noise.
+
+---
+
+### Summary
+
+Putting it all together, the Prophet model is:
+
+\[
+y(t) = \underbrace{g(t)}_{\text{trend}} \;+\; \underbrace{s(t)}_{\text{seasonality}} \;+\; \underbrace{h(t)}_{\text{holidays}} \;+\; \underbrace{\varepsilon(t)}_{\text{noise}}.
+\]
+
+1. **Trend**: Long-term patterns, which can be piecewise linear or logistic.  
+2. **Seasonality**: Captured via Fourier series for daily, weekly, yearly, or other cycles.  
+3. **Holidays**: Modeled as additional (mostly) short-term effects around specific dates or events.  
+4. **Noise**: The leftover random variation.
+
+By decomposing \( y(t) \) into these four parts, Prophet helps analysts understand and forecast the time series in a transparent, interpretable way.
+
 
 1. **Trend (\( g(t) \))**  
    Often modeled as a **piecewise linear** function with potential change points (where the slope can change) or a logistic growth function if there is a known carrying capacity. For piecewise linear:
