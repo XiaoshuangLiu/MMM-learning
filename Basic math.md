@@ -8,6 +8,58 @@
 A **Bayesian regression model** estimates relationships between inputs (like media spend, promotions, seasonality) and an outcome (like sales), while quantifying uncertainty. Instead of giving one "best" value for each parameter, it gives a **distribution** of likely values based on both prior knowledge and observed data.
 
 ### Bayes’ Theorem:
+# Save the Bayes’ Theorem explanation content as a Markdown file
+
+bayes_formula_md = """
+# 📘 Bayes’ Theorem: The Core of Bayesian Inference
+
+Bayes' Rule helps us update our beliefs after observing data.
+
+## 🧮 The Formula
+
+\\[
+P(\\theta \\mid D) = \\frac{P(D \\mid \\theta) \\cdot P(\\theta)}{P(D)}
+\\]
+
+Where:
+
+- \\( \\theta \\): model parameters (e.g., regression coefficients like \\(\\beta_1, \\beta_2\\))
+- \\( D \\): observed data (e.g., sales, media spend)
+- \\( P(\\theta) \\): **Prior** — your belief about the parameters before seeing the data
+- \\( P(D \\mid \\theta) \\): **Likelihood** — how well the model explains the data, given \\(\\theta\\)
+- \\( P(\\theta \\mid D) \\): **Posterior** — your updated belief after seeing the data
+- \\( P(D) \\): **Evidence** (a normalizing constant, not needed in MCMC)
+
+---
+
+## 📘 What Each Term Means
+
+| Term       | Description |
+|------------|-------------|
+| **Prior** \\( P(\\theta) \\)       | Encodes our beliefs about parameters before seeing any data (e.g., media ROAS is probably positive, decay is between 0 and 1) |
+| **Likelihood** \\( P(D \\mid \\theta) \\) | Measures how probable the observed data is, assuming a certain value of the parameters |
+| **Posterior** \\( P(\\theta \\mid D) \\)  | Combines prior beliefs and observed evidence — gives a full distribution of what we now believe about parameters |
+| **Evidence** \\( P(D) \\)          | Just a normalizing constant so the posterior integrates to 1; not needed in MCMC |
+
+---
+
+✅ In practice, we usually use the simplified version:
+
+\\[
+P(\\theta \\mid D) \\propto P(D \\mid \\theta) \\cdot P(\\theta)
+\\]
+
+Because MCMC methods sample from the **shape** of the posterior, and do not need the denominator.
+"""
+
+# Save the file
+formula_path = "/mnt/data/Bayes_Theorem_Explained.md"
+with open(formula_path, "w") as f:
+    f.write(bayes_formula_md)
+
+formula_path
+
+
 ```
 P(θ | D) = [P(D | θ) * P(θ)] / P(D)
 ```
