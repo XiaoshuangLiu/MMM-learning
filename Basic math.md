@@ -73,7 +73,7 @@ Let’s say you observe someone coughing. You want to infer whether they have a 
 ### Problem:
 We can’t compute the denominator of Bayes' Rule analytically. It involves integrating over all possible θ — which is hard in high dimensions or nonlinear models.
 
-### Why is the numerator easy but denominator hard?
+### Why is the numerator easy but the denominator hard?
 - **Numerator** = likelihood × prior → easy because it only needs evaluation at a single θ
 - **Denominator** = integration over all θ → hard, especially with many dimensions
 
