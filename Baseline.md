@@ -20,7 +20,6 @@ Below, you’ll find detailed explanations of the math behind each approach, how
 y(t) = g(t) + s(t) + h(t) + ε(t),
 ```
 where:
-
 - g(t) is the trend component.
 - s(t) is the seasonality component (potentially multiple seasonalities).
 - h(t) is the holiday or special event component.
