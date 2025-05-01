@@ -188,9 +188,38 @@ By decomposing \( y(t) \) into these four parts, Prophet helps analysts understa
 
 ## 2. ALS-Based Baselining
 
-### What is ALS (Alternating Least Squares)?
+### What is ALS (Asymmetric Least Squares)?
 
-In many advanced analytics contexts (e.g. **Marketing Mix Modeling**), **ALS-based baselining** is used to iteratively solve for a “baseline” component alongside multiple explanatory variables. A simplified example:
+In many advanced analytics contexts (e.g. **Marketing Mix Modeling**), **ALS-based baselining** is used to iteratively solve for a “baseline” component alongside multiple explanatory variables. Asymmetric Least Squares is a baseline-estimation technique that deliberately penalizes positive and negative residuals unequally. It is most often used to pull out the “slow-moving background” (baseline) that sits underneath sharp peaks—e.g., in Raman, IR, Mass-Spec, chromatograms, or any 1-D signal where you want to keep the peaks but remove the drift.
+Given a 1-D signal \(y = (y_1,\dots,y_n)\), AsLS solves
+
+\[
+\min_{z}\;
+\underbrace{\sum_{i=1}^{n} w_i\bigl(y_i - z_i\bigr)^2}_{\text{weighted residual}}
+\;+\;
+\underbrace{\lambda \,\lVert D^{2} z\rVert_2^{2}}_{\text{smoothness penalty}}
+\]
+
+| Symbol | Meaning |
+|--------|---------|
+| \(z\)  | baseline vector to estimate |
+| \(w_i\) | asymmetric weights |
+| \(D^{2}\) | 2-nd-order difference operator (approximates second derivative) |
+| \(\lambda\) | smoothness strength (large → flatter baseline) |
+
+Weight rule (per iteration):
+
+\[
+w_i =
+\begin{cases}
+p & \text{if } y_i > z_i \quad(\text{point above baseline, i.e. a peak})\\
+1-p & \text{if } y_i \le z_i
+\end{cases}
+\qquad
+(0 < p \ll 0.5)
+\]
+
+
 
 ```text
 y(t) = B(t) + ∑( βᵢ xᵢ(t) ) + ε(t),
