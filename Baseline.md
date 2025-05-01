@@ -191,33 +191,109 @@ By decomposing \( y(t) \) into these four parts, Prophet helps analysts understa
 ### What is ALS (Asymmetric Least Squares)?
 
 In many advanced analytics contexts (e.g. **Marketing Mix Modeling**), **ALS-based baselining** is used to iteratively solve for a “baseline” component alongside multiple explanatory variables. Asymmetric Least Squares is a baseline-estimation technique that deliberately penalizes positive and negative residuals unequally. It is most often used to pull out the “slow-moving background” (baseline) that sits underneath sharp peaks—e.g., in Raman, IR, Mass-Spec, chromatograms, or any 1-D signal where you want to keep the peaks but remove the drift.
-Given a 1-D signal \(y = (y_1,\dots,y_n)\), AsLS solves
+### What *Asymmetric Least Squares* (AsLS) really is
+Asymmetric Least Squares is a **baseline-estimation technique** that deliberately penalizes positive and negative residuals **unequally**.  It is most often used to pull out the “slow-moving background” (baseline) that sits underneath sharp peaks—e.g., in Raman, IR, Mass-Spec, chromatograms, or any 1-D signal where you want to keep the peaks but remove the drift.
+
+---
+
+#### 1.  The optimisation problem
+
+Given a one-dimensional signal \(y = (y_1,\dots,y_n)\), AsLS finds a smooth baseline \(z = (z_1,\dots,z_n)\) by solving  
 
 \[
-\min_{z}\;
-\underbrace{\sum_{i=1}^{n} w_i\bigl(y_i - z_i\bigr)^2}_{\text{weighted residual}}
+\min_{z}\quad
+\sum_{i=1}^{n} w_i\bigl(y_i - z_i\bigr)^2
 \;+\;
-\underbrace{\lambda \,\lVert D^{2} z\rVert_2^{2}}_{\text{smoothness penalty}}
+\lambda\,\bigl\|D^{2} z\bigr\|_2^{2}
 \]
 
-| Symbol | Meaning |
-|--------|---------|
-| \(z\)  | baseline vector to estimate |
-| \(w_i\) | asymmetric weights |
-| \(D^{2}\) | 2-nd-order difference operator (approximates second derivative) |
-| \(\lambda\) | smoothness strength (large → flatter baseline) |
+* **Weighted residual term – \(\sum w_i(\cdot)^2\)**  
+  * If \(y_i > z_i\) (data point sits **above** the current baseline) we assign a **small** weight \(p\).  
+  * If \(y_i \le z_i\) (point sits **on/under** the baseline) we assign a **large** weight \(1-p\).  
+  *Typical choice: \(p\in[0.001,0.1]\).  
+  *The asymmetry forces the optimisation to “care” much less about points above the baseline (peaks) than those below it.
 
-Weight rule (per iteration):
+* **Smoothness penalty – \(\lambda\|D^{2}z\|_2^{2}\)**  
+  * \(D^{2}z\) is the second-order discrete difference (an approximation to the second derivative).  
+  * Large \(\lambda\) → flatter, smoother baseline; small \(\lambda\) → baseline follows local wiggles more closely.  
+  *Typical \(\lambda\) ranges from \(10^{2}\) to \(10^{8}\) depending on sampling resolution and noise.
 
-\[
-w_i =
-\begin{cases}
-p & \text{if } y_i > z_i \quad(\text{point above baseline, i.e. a peak})\\
-1-p & \text{if } y_i \le z_i
-\end{cases}
-\qquad
-(0 < p \ll 0.5)
-\]
+AsLS is usually solved with *Iteratively Re-weighted Least Squares* (IRLS):
+
+1. **Initial step** – set all weights \(w_i=1\); solve the resulting ordinary least-squares with the smoothness penalty (a banded linear system).  
+2. **Update weights** – compare \(y_i\) to the new \(z_i\); set  
+   \[
+   w_i=
+   \begin{cases}
+     p, & \text{if } y_i>z_i\\[2pt]
+     1-p, & \text{otherwise.}
+   \end{cases}
+   \]  
+3. **Repeat** steps 1–2 until \(z\) changes negligibly (often <10 iterations).
+
+Because each iteration is a linear least-squares on a tridiagonal/banded matrix, the algorithm is very fast even for hundreds of thousands of points.
+
+---
+
+#### 2.  Intuition
+
+*Ordinary* least squares would try to put the baseline mid-way through the peaks because it treats every residual equally.  
+AsLS says:  
+
+* “I don’t care much about points **above** me (peaks) — give them a tiny weight.”  
+* “I care a lot about being above or just touching the points **below** me — give them a big weight.”  
+
+Coupled with the smoothness term, the algorithm quickly slides the line down until it just “kisses” the bottom of the signal while staying smooth.
+
+---
+
+#### 3.  Key hyper-parameters
+
+| Symbol | Meaning | Practical rule-of-thumb |
+|--------|---------|--------------------------|
+| \(p\)  | Asymmetry (peak penalty) | Start at 0.01; smaller → lower baseline, larger → baseline creeps upward. |
+| \(\lambda\) | Smoothness penalty | Start at \(10^6\); raise for smoother baseline, lower if it under-fits slow drift. |
+| Iterations | IRLS steps | 5–15 is enough in practice. |
+
+---
+
+#### 4.  When to use / when **not** to use
+
+| Good fit for AsLS                           | Poor fit for AsLS                      |
+|---------------------------------------------|----------------------------------------|
+| Signals with **sharp positive peaks** on a slowly varying baseline (spectra, chromatograms). | Situations where peaks can be negative dips, or where you need to fit peaks themselves (then use peak models). |
+| Need a **fast, non-parametric** baseline with only two tunable numbers. | Data whose baseline changes *abruptly* (step jumps) — smoothness penalty will oversmooth. |
+| You want a method that is **robust to outliers on the high side**. | 2-D surfaces or images – AsLS is 1-D; higher-dimensional analogues exist but need other algorithms. |
+
+---
+
+#### 5.  Minimal Python example
+
+```python
+import numpy as np
+from scipy import sparse
+from scipy.sparse.linalg import spsolve
+
+def asymmetric_least_squares(y, lam=1e6, p=0.01, niter=10):
+    """Return baseline z for signal y using AsLS."""
+    L = len(y)
+    D = sparse.eye(L, format='csc')  # identity
+    for i in range(2):                         # build D^2
+        D = D[1:] - D[:-1]
+    D = D.T @ D                               # (D^2)'(D^2)
+    w = np.ones(L)
+    for _ in range(niter):
+        W = sparse.diags(w, 0, shape=(L, L))
+        Z = W + lam * D
+        z = spsolve(Z, w * y)
+        w = p * (y > z) + (1 - p) * (y <= z)
+    return z
+```
+
+---
+
+### Bottom line
+**Asymmetric Least Squares** is a simple, fast, and robust way to carve out a smooth “under-curve” baseline by **penalising positive errors far less than negative ones**, then iteratively refining that baseline with a smoothness constraint. It shines whenever sharp peaks ride on top of a slow, unknown drift that you need to subtract away.
 
 
 
